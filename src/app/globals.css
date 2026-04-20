@@ -4,13 +4,17 @@
   --color-primary: #FF6B35;
   --color-primary-dark: #E55A2B;
   --color-secondary: #1A1A2E;
+  --color-secondary-light: #16213E;
   --color-accent: #00D4AA;
+  --color-accent-dark: #00B894;
   --color-background: #0F0F1A;
+  --color-background-light: #1A1A2E;
   --color-surface: #232340;
   --color-surface-light: #2D2D4A;
+  --color-border: #2D2D4A;
   --color-text: #FFFFFF;
   --color-text-muted: #B8B8D1;
-  --color-border: #2D2D4A;
+  --color-text-dark: #6B6B8A;
   --color-success: #00D4AA;
   --color-warning: #FFB800;
   --color-error: #FF4757;
@@ -18,6 +22,8 @@
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -25,10 +31,8 @@ body {
   color: var(--color-text);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
-  margin: 0;
 }
 
-/* Custom utilities */
 .hero-pattern {
   background: 
     radial-gradient(ellipse at top, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
@@ -49,11 +53,16 @@ body {
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 20px rgba(255, 107, 53, 0.1);
 }
 
 .card-highlight {
   border-color: var(--color-primary);
-  box-shadow: 0 0 20px rgba(255, 107, 53, 0.15);
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.2);
 }
 
 /* Button styles */
@@ -97,7 +106,7 @@ body {
 }
 
 .btn-accent:hover {
-  background: #00B894;
+  background: var(--color-accent-dark);
 }
 
 /* Input styles */
@@ -135,24 +144,16 @@ body {
 
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out forwards;
-  opacity: 0;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-background);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary);
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+  }
+  
+  .btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+  }
 }
