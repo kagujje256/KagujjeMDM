@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #FF6B35;
+  --primary-dark: #E55A2B;
+  --secondary: #1A1A2E;
+  --secondary-light: #16213E;
+  --accent: #00D4AA;
+  --accent-dark: #00B894;
+  --background: #0F0F1A;
+  --background-light: #1A1A2E;
+  --surface: #232340;
+  --surface-light: #2D2D4A;
+  --text: #FFFFFF;
+  --text-muted: #B8B8D1;
+  --text-dark: #6B6B8A;
+  --success: #00D4AA;
+  --warning: #FFB800;
+  --error: #FF4757;
+  --border: #2D2D4A;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Custom utilities */
+.hero-pattern {
+  background: 
+    radial-gradient(ellipse at top, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(0, 212, 170, 0.05) 0%, transparent 50%),
+    var(--background);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+}
+
+/* Card styles */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+}
+
+/* Button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--surface-light);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: var(--background);
+}
+
+.btn-accent:hover {
+  background: var(--accent-dark);
+}
+
+/* Input styles */
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Badge styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-primary {
+  background: rgba(255, 107, 53, 0.2);
+  color: var(--primary);
+}
+
+.badge-accent {
+  background: rgba(0, 212, 170, 0.2);
+  color: var(--accent);
+}
+
+.badge-warning {
+  background: rgba(255, 184, 0, 0.2);
+  color: var(--warning);
+}
+
+.badge-error {
+  background: rgba(255, 71, 87, 0.2);
+  color: var(--error);
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+  }
+  
+  .btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+  }
+}
