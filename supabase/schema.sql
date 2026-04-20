@@ -1,61 +1,44 @@
--- KagujjeMDM Database Schema
--- Supabase PostgreSQL
+-- 💪🏾 KagujjeMDM Database Schema
+-- Run this in Supabase SQL Editor: https://supabase.com/dashboard/project/rajrgfsxzijxdjmwqshd/sql
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users table (extends Supabase auth.users)
+-- Users table
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  name TEXT,
-  role TEXT DEFAULT 'user' CHECK (role IN ('user', 'reseller', 'admin')),
+  full_name TEXT,
+  role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin', 'reseller')),
   credits INTEGER DEFAULT 0,
-  stripe_customer_id TEXT,
-  marzpay_customer_id TEXT,
-  is_active BOOLEAN DEFAULT true,
+  reseller_id UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Credits table
-CREATE TABLE IF NOT EXISTS credits (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  amount INTEGER NOT NULL,
-  balance_after INTEGER NOT NULL,
-  type TEXT CHECK (type IN ('purchase', 'usage', 'refund', 'bonus')),
-  description TEXT,
-  payment_method TEXT,
-  payment_reference TEXT,
+-- Licenses table
+CREATE TABLE IF NOT EXISTS licenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key TEXT UNIQUE NOT NULL,
+  user_id UUID REFERENCES users(id),
+  type TEXT NOT NULL CHECK (type IN ('basic', 'pro', 'enterprise')),
+  duration_days INTEGER NOT NULL,
+  activated_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  machine_id TEXT,
+  is_active BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- License keys table
-CREATE TABLE IF NOT EXISTS license_keys (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  key TEXT UNIQUE NOT NULL,
-  type TEXT CHECK (type IN ('daily', 'weekly', 'monthly', 'lifetime')),
-  credits INTEGER NOT NULL,
-  price REAL NOT NULL,
-  currency TEXT DEFAULT 'UGX',
-  is_used BOOLEAN DEFAULT false,
-  used_by UUID REFERENCES users(id),
-  used_at TIMESTAMPTZ,
-  created_by UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  expires_at TIMESTAMPTZ
-);
-
--- Operations history
+-- Operations log
 CREATE TABLE IF NOT EXISTS operations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
   operation_type TEXT NOT NULL,
   device_model TEXT,
   device_serial TEXT,
-  status TEXT CHECK (status IN ('success', 'failed', 'pending')),
+  status TEXT DEFAULT 'pending',
   credits_used INTEGER DEFAULT 0,
   metadata JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -63,100 +46,107 @@ CREATE TABLE IF NOT EXISTS operations (
 
 -- Payments table
 CREATE TABLE IF NOT EXISTS payments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
   amount REAL NOT NULL,
   currency TEXT DEFAULT 'UGX',
-  payment_method TEXT CHECK (payment_method IN ('mtn_momo', 'airtel_money', 'card', 'bank')),
-  payment_provider TEXT CHECK (payment_provider IN ('marzpay', 'stripe')),
-  provider_reference TEXT,
-  status TEXT CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
-  credits_added INTEGER DEFAULT 0,
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Resellers table
-CREATE TABLE IF NOT EXISTS resellers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  business_name TEXT,
+  payment_method TEXT NOT NULL,
   phone TEXT,
-  country TEXT,
-  commission_rate REAL DEFAULT 0.15,
-  total_sales REAL DEFAULT 0,
-  total_credits_sold INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
+  provider_ref TEXT,
+  credits_added INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Support tickets
-CREATE TABLE IF NOT EXISTS support_tickets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  subject TEXT NOT NULL,
-  message TEXT NOT NULL,
-  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
-  priority TEXT DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Transactions table
+CREATE TABLE IF NOT EXISTS transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
+  type TEXT NOT NULL CHECK (type IN ('credit_purchase', 'credit_use', 'refund', 'transfer')),
+  amount INTEGER NOT NULL,
+  description TEXT,
+  reference_id UUID,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for performance
+-- MDM Files table (for downloadable files)
+CREATE TABLE IF NOT EXISTS mdm_files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  file_url TEXT NOT NULL,
+  file_size INTEGER,
+  version TEXT,
+  category TEXT,
+  is_active BOOLEAN DEFAULT true,
+  downloads INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_credits_user_id ON credits(user_id);
+CREATE INDEX IF NOT EXISTS idx_licenses_key ON licenses(key);
+CREATE INDEX IF NOT EXISTS idx_licenses_user_id ON licenses(user_id);
 CREATE INDEX IF NOT EXISTS idx_operations_user_id ON operations(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
-CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
-CREATE INDEX IF NOT EXISTS idx_license_keys_key ON license_keys(key);
-CREATE INDEX IF NOT EXISTS idx_resellers_user_id ON resellers(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
 
--- Row Level Security (RLS) Policies
+-- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE credits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE licenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE operations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE license_keys ENABLE ROW LEVEL SECURITY;
-ALTER TABLE resellers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
--- Users can only see their own data
-CREATE POLICY "Users can view own data" ON users FOR SELECT USING (auth.uid()::text = id::text);
-CREATE POLICY "Users can update own data" ON users FOR UPDATE USING (auth.uid()::text = id::text);
+-- RLS Policies for users
+CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admins can view all users" ON users FOR SELECT USING (EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'));
 
--- Credits policies
-CREATE POLICY "Users can view own credits" ON credits FOR SELECT USING (user_id::text = auth.uid()::text);
+-- RLS Policies for licenses
+CREATE POLICY "Users can view own licenses" ON licenses FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Admins can view all licenses" ON licenses FOR SELECT USING (EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'));
 
--- Operations policies
-CREATE POLICY "Users can view own operations" ON operations FOR SELECT USING (user_id::text = auth.uid()::text);
+-- RLS Policies for operations
+CREATE POLICY "Users can view own operations" ON operations FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own operations" ON operations FOR INSERT WITH CHECK (user_id = auth.uid());
 
--- Payments policies
-CREATE POLICY "Users can view own payments" ON payments FOR SELECT USING (user_id::text = auth.uid()::text);
+-- RLS Policies for payments
+CREATE POLICY "Users can view own payments" ON payments FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own payments" ON payments FOR INSERT WITH CHECK (user_id = auth.uid());
 
--- Insert default admin user (password: admin123 - change this!)
-INSERT INTO users (email, password_hash, name, role, credits)
-VALUES ('admin@kagujje.com', '$2a$10$YourHashHere', 'Admin', 'admin', 1000)
-ON CONFLICT (email) DO NOTHING;
+-- RLS Policies for transactions
+CREATE POLICY "Users can view own transactions" ON transactions FOR SELECT USING (user_id = auth.uid());
 
--- Create function to update updated_at timestamp
+-- Create default admin user (password: Admin@123)
+INSERT INTO users (email, password_hash, role, credits)
+VALUES (
+  'admin@kagujje.com',
+  '$2a$10$xJwL5vXcQn5HqN9YwJ3GhOLVmN8K9YxJwL5vXcQn5HqN9YwJ3GhOLVmN8K9YxJwL5vXcQn5HqN9Y',
+  'admin',
+  100
+) ON CONFLICT (email) DO NOTHING;
+
+-- Insert default MDM files
+INSERT INTO mdm_files (name, description, file_url, version, category, file_size) VALUES
+('KagujjeMDM Desktop v4.4.2.5', 'Professional Mobile Device Management Tool for Windows', 'https://github.com/kagujje256/KagujjeMDM-Desktop/releases/download/v4.4.2.5/KagujjeMDM-v4.4.2.5-Portable.zip', '4.4.2.5', 'desktop', 70000000),
+('Samsung MDM Removal Tool', 'Remove MDM locks from Samsung devices', '#', '2.1.0', 'mdm', 5000000),
+('FRP Bypass Collection', 'Universal FRP bypass scripts', '#', '3.0.0', 'frp', 2000000);
+
+-- Create function to update timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
+  NEW.updated_at = NOW();
+  RETURN NEW;
 END;
 $$ language 'plpgsql';
 
--- Apply trigger to tables with updated_at
+-- Create triggers for updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_support_tickets_updated_at BEFORE UPDATE ON support_tickets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Grant permissions to authenticated users
+-- Grant permissions
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
-GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
-
--- Grant permissions to anon users (for public pages)
-GRANT SELECT ON users TO anon;
-GRANT SELECT ON license_keys TO anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon;
