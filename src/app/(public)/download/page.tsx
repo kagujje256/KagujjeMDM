@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Windows, Cpu, HardDrive, Wifi, CheckCircle } from "lucide-react";
+import { Download, Monitor, Cpu, HardDrive, Wifi, CheckCircle, Shield, Zap, Users, Globe, ArrowRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 export default function DownloadPage() {
@@ -55,7 +55,7 @@ export default function DownloadPage() {
               {/* Windows Badge */}
               <div className="flex items-center justify-center mb-8">
                 <div className="flex items-center space-x-3 bg-[#00A8FF]/10 border border-[#00A8FF]/30 rounded-full px-6 py-2">
-                  <Windows className="w-6 h-6 text-[#00A8FF]" />
+                  <Monitor className="w-6 h-6 text-[#00A8FF]" />
                   <span className="text-[#00A8FF] font-medium">Windows 10/11 (64-bit)</span>
                 </div>
               </div>
