@@ -52,25 +52,7 @@ export default function RegisterPage() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Create user record in users table
-        const response = await fetch('/api/auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'createUser',
-            userId: authData.user.id,
-            email: formData.email,
-            fullName: formData.fullName,
-          }),
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          router.push('/dashboard?welcome=true');
-        } else {
-          setError(result.error || "Failed to create account");
-        }
+        router.push('/dashboard?welcome=true');
       }
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
