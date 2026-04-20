@@ -6,20 +6,54 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
-// Server-side client with service role
-export function createServerClient() {
-  const supabaseUrl = process.env.SUPABASE_URL!;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  
-  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+// Server-side client with service key
+export function getSupabaseClient() {
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY!;
+  return createClient<Database>(supabaseUrl, serviceKey, {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
-    }
+      persistSession: false,
+    },
   });
 }
 
-// Admin client for privileged operations
-export function createAdminClient() {
-  return createServerClient();
+// Auth helper functions
+export async function signUp(email: string, password: string, fullName?: string) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+      },
+    },
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function signIn(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+export async function getCurrentUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
+export async function getSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
 }
